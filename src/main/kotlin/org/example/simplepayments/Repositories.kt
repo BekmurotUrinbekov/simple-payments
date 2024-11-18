@@ -73,6 +73,7 @@ interface TransactionRepository : BaseRepository<Transaction> {
 @Repository
 interface TransactionItemRepository : BaseRepository<TransactionItem> {
     fun findByTransactionIdAndDeletedFalse(transactionId: Long,pageable: Pageable): Page<TransactionItem>
+    fun findByTransactionIdAndDeletedFalse(transactionId: Long): List<TransactionItem>
 }
 
 @Repository

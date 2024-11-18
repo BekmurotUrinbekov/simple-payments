@@ -104,6 +104,10 @@ class TransactionController(private val transactionService: TransactionService) 
     fun getAllTransactions(pageable: Pageable): Page<TransactionResponse> {
         return transactionService.getAllTransactions(pageable)
     }
+    @GetMapping(BaseUrl.DELETE_BY_ID)
+    fun deleteProduct(@PathVariable id: Long) {
+        transactionService.delete(id)
+    }
 }
 
 @RestController
@@ -118,6 +122,14 @@ class TransactionItemController(private val transactionItemService: TransactionI
     @GetMapping(BaseUrl.GET_HISTORY_BY_ID)
     fun getItemsByTransaction(@PathVariable(name = "id") transactionId: Long, pageable: Pageable): Page<TransactionItemResponse> {
         return transactionItemService.getItemsByTransaction(transactionId, pageable)
+    }
+    @GetMapping(BaseUrl.SHOW)
+    fun getAllProducts(pageable: Pageable): Page<TransactionItemResponse> {
+        return transactionItemService.getAll(pageable)
+    }
+    @GetMapping(BaseUrl.DELETE_BY_ID)
+    fun deleteProduct(@PathVariable id: Long) {
+        transactionItemService.delete(id)
     }
 }
 

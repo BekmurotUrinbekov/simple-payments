@@ -1,6 +1,5 @@
 package org.example.simplepayments
 
-import jakarta.persistence.EntityManager
 import jakarta.transaction.Transactional
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -30,11 +29,14 @@ interface TransactionService {
     fun createTransaction(request: TransactionRequest): TransactionResponse
     fun getTransactionHistory(userId: Long,pageable: Pageable): Page<TransactionResponse>
     fun getAllTransactions(pageable: Pageable): Page<TransactionResponse>
+    fun delete(id: Long)
 }
 
 interface TransactionItemService {
     fun addItem(request: TransactionItemRequest): TransactionItemResponse
     fun getItemsByTransaction(transactionId: Long,pageable: Pageable): Page<TransactionItemResponse>
+    fun getAll(pageable: Pageable): Page<TransactionItemResponse>
+    fun delete(transactionId: Long)
 }
 interface ProductService {
     fun create(request: ProductRequest)
@@ -101,7 +103,6 @@ class CategoryServiceImpl(
 @Service
 class ProductServiceImpl(
     private val productRepository: ProductRepository,
-    private val entityManager: EntityManager,
     private val categoryRepository: CategoryRepository
 ) : ProductService {
 
@@ -288,6 +289,10 @@ class TransactionServiceImpl(
     override fun getAllTransactions(pageable: Pageable): Page<TransactionResponse> {
         return transactionRepository.findAllNotDeletedForPageable(pageable).map { TransactionMapper.toResponse(it) }
     }
+
+    override fun delete(id: Long) {
+        transactionRepository.trash(id)
+    }
 }
 
 @Service
@@ -300,8 +305,7 @@ class TransactionItemServiceImpl(
 
     @Transactional
     override fun addItem(request: TransactionItemRequest): TransactionItemResponse {
-        val transaction = transactionRepository.findById(request.transactionId)
-            .orElseThrow { TransactionNotFoundExistsException() }
+        val transaction = transactionRepository.findByIdAndDeletedFalse(request.transactionId)?: throw TransactionNotFoundExistsException()
         val product = productRepository.findByIdAndDeletedFalse(request.productId)?: throw ProductNotFoundExistsException()
 
         if (product.count < request.count) {
@@ -333,6 +337,17 @@ class TransactionItemServiceImpl(
 
     override fun getItemsByTransaction(transactionId: Long, pageable: Pageable): Page<TransactionItemResponse> {
         return transactionItemRepository.findByTransactionIdAndDeletedFalse(transactionId,pageable).map { TransactionItemMapper.toResponse(it) }
+    }
+
+    override fun getAll(pageable: Pageable): Page<TransactionItemResponse> {
+        return transactionItemRepository.findAllNotDeletedForPageable(pageable).map { TransactionItemMapper.toResponse(it) }
+    }
+
+    override fun delete(transactionId: Long) {
+        val transactionItems =
+            transactionItemRepository.findByTransactionIdAndDeletedFalse(transactionId)
+        transactionItems.forEach { item -> item.id?.let { transactionItemRepository.trash(it) } }
+
     }
 }
 
